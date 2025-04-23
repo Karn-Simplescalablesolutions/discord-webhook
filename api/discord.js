@@ -1,16 +1,14 @@
-import express from 'express';
 import nacl from 'tweetnacl';
-import dotenv from 'dotenv';
 
-dotenv.config();
+export default async function handler(req, res) {
+  const signature = req.headers['x-signature-ed25519'];
+  const timestamp = req.headers['x-signature-timestamp'];
 
-const app = express();
-app.use(express.text({ type: '*/*' }));
-
-app.post('/discord', async (req, res) => {
-  const signature = req.header('x-signature-ed25519');
-  const timestamp = req.header('x-signature-timestamp');
-  const rawBody = req.body;
+  const buffers = [];
+  for await (const chunk of req) {
+    buffers.push(chunk);
+  }
+  const rawBody = Buffer.concat(buffers).toString('utf-8');
 
   const isVerified = nacl.sign.detached.verify(
     Buffer.from(timestamp + rawBody),
@@ -22,10 +20,10 @@ app.post('/discord', async (req, res) => {
     return res.status(401).send('Invalid signature');
   }
 
-  // Handle Discord PING
   const interaction = JSON.parse(rawBody);
+
   if (interaction.type === 1) {
-    return res.json({ type: 1 });
+    return res.status(200).json({ type: 1 }); // Pong
   }
 
   // Forward to n8n
@@ -35,9 +33,11 @@ app.post('/discord', async (req, res) => {
     body: rawBody,
   });
 
-  res.status(200).send('Forwarded to n8n');
-});
+  return res.status(200).send('Forwarded to n8n');
+}
 
-app.listen(3000, () => {
-  console.log('Discord verifier running on port 3000');
-});
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
