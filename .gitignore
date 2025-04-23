@@ -1,0 +1,16 @@
+# Node.js
+node_modules/
+.env
+dist/
+*.log
+
+# macOS system files
+.DS_Store
+
+# Vercel build output (optional, if not using git-based deploy)
+.vercel
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
